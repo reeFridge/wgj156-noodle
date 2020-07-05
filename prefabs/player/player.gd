@@ -11,12 +11,14 @@ onready var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 var velocity = Vector2()
 var is_on_rope = false
 var rope = null
+var rope_jump_force = 0
+var walk_force = 0
 
 func drop_rope():
 	if Input.is_action_pressed("ui_right"):
-		velocity.x += 300
+		rope_jump_force = 200
 	elif Input.is_action_pressed("ui_left"):
-		velocity.x -= 300
+		rope_jump_force = -200
 	is_on_rope = false
 
 func _physics_process(delta):
@@ -28,7 +30,9 @@ func _physics_process(delta):
 
 	if Input.is_action_pressed("ui_left"):
 		$Sprite.flip_h = true
+		walk_force = -WALK_SPEED
 	elif Input.is_action_pressed("ui_right"):
+		walk_force = WALK_SPEED
 		$Sprite.flip_h = false
 
 	if is_on_rope and Input.is_action_pressed("jump"):
@@ -60,15 +64,18 @@ func _physics_process(delta):
 		velocity.y += delta * gravity
 
 	if is_on_floor():
+		rope_jump_force = 0
+		walk_force = 0
 		if Input.is_action_pressed("ui_left"):
-			velocity.x = -WALK_SPEED
+			walk_force = -WALK_SPEED
 			$AnimationPlayer.play("walk")
 		elif Input.is_action_pressed("ui_right"):
-			velocity.x = WALK_SPEED
+			walk_force = WALK_SPEED
 			$AnimationPlayer.play("walk")
 		else:
 			$AnimationPlayer.play("idle")
-			velocity.x = 0
+			
+	velocity.x = walk_force + rope_jump_force
 
 	if !is_on_floor() and velocity.y > -220:
 		velocity += Vector2.UP * -9.81 * fall_multiplier

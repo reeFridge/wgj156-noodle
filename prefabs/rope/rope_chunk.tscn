@@ -3,7 +3,6 @@
 [ext_resource path="res://assets/rope_chunk.png" type="Texture" id=1]
 [ext_resource path="res://prefabs/rope/rope_chunk.gd" type="Script" id=2]
 
-
 [sub_resource type="CapsuleShape2D" id=1]
 radius = 3.0
 height = 8.0
@@ -11,6 +10,7 @@ height = 8.0
 [node name="rope_chunk" type="RigidBody2D" groups=[
 "rope_chunks",
 ]]
+gravity_scale = 5.0
 script = ExtResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

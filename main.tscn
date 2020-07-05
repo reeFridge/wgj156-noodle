@@ -26,6 +26,10 @@ tile_data = PoolIntArray( -458746, 12, 0, -458745, 12, 0, -458744, 12, 0, -45874
 [node name="player" parent="." instance=ExtResource( 3 )]
 
 [node name="cube" parent="." instance=ExtResource( 2 )]
+position = Vector2( 78, 0 )
+mass = 20.0
+gravity_scale = 3.0
+contacts_reported = 1
 
 [node name="Rope" parent="." instance=ExtResource( 5 )]
 position = Vector2( 368, -176 )
