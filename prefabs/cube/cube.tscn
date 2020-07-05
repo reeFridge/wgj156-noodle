@@ -3,7 +3,8 @@
 [ext_resource path="res://assets/inca_back.png" type="Texture" id=1]
 
 [sub_resource type="PhysicsMaterial" id=1]
-friction = 0.5
+friction = 0.8
+rough = true
 bounce = 0.1
 
 [sub_resource type="AtlasTexture" id=2]
@@ -15,7 +16,10 @@ extents = Vector2( 16, 16 )
 
 [node name="cube" type="RigidBody2D" groups=[
 "bodies",
+"rope_interactive",
 ]]
+collision_layer = 4
+collision_mask = 6
 mass = 50.0
 physics_material_override = SubResource( 1 )
 
