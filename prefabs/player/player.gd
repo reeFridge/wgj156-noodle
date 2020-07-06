@@ -27,10 +27,16 @@ func reset_rope():
 		end_node.get_parent().remove_child(end_node)
 	
 func _process(delta):
-	if Input.is_action_pressed("ui_down"):
-		$rot.rotate(5 * delta)
-	elif Input.is_action_pressed("ui_up"):
-		$rot.rotate(-5 * delta)
+	if sign($rope_start.position.x) > 0:
+		if Input.is_action_pressed("ui_down"):
+			$rot.rotation_degrees = clamp($rot.rotation_degrees + 60 * delta, -90, 90)
+		elif Input.is_action_pressed("ui_up"):
+			$rot.rotation_degrees = clamp($rot.rotation_degrees - 60 * delta, -90, 90)
+	elif sign($rope_start.position.x) < 0:
+		if Input.is_action_pressed("ui_up"):
+			$rot.rotation_degrees = clamp($rot.rotation_degrees + 60 * delta, 90, 270)
+		elif Input.is_action_pressed("ui_down"):
+			$rot.rotation_degrees = clamp($rot.rotation_degrees - 60 * delta, 90, 270)
 
 	if Input.is_action_just_pressed("throw_rope") && !$rope.end_pin:
 		var rope_end_instance = rope_end.instance()
@@ -73,10 +79,14 @@ func _physics_process(delta):
 		$Sprite.flip_h = true
 		jump_force = -WALK_SPEED
 		mirror_node(-1, $rope_start, rope_start_pos)
+		if $rot.rotation_degrees >= -90 && $rot.rotation_degrees <= 90:
+			$rot.rotation_degrees = 180 - $rot.rotation_degrees
 	elif Input.is_action_pressed("ui_right"):
 		jump_force = WALK_SPEED
 		$Sprite.flip_h = false
 		mirror_node(1, $rope_start, rope_start_pos)
+		if $rot.rotation_degrees >= 90 && $rot.rotation_degrees <= 270:
+			$rot.rotation_degrees = 180 - $rot.rotation_degrees
 	
 	if !is_on_floor():
 		velocity.y += delta * gravity
