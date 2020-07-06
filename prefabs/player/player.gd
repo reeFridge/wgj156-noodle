@@ -1,5 +1,17 @@
 extends KinematicBody2D
 
+## PENDULUM-PHYSIC vars
+# STATIC VARIABLES
+export var l = 2.0 #length of the pendulum; 1/100 of the pendulum graphic
+export var g = 9.81 #m/s^2, gravitational acceleration
+export var gamma = 0.1 #damping ratio to take friction into account
+export var factor = 200
+# PENDULUM CHANGING VARIABLES
+var phi = 0 #starting angle of the pendulum
+var phi_first = 0 #starting angular velocity of the pendulum
+var pendulum_pos = Vector2()
+var pendulum_velocity = Vector2()
+
 const WALK_SPEED = 180
 const JUMP_SPEED = 230
 const MAX_SPEED = 180
@@ -21,12 +33,38 @@ var velocity = Vector2()
 var walk_force = 0
 var jump_force = 0
 var hooked = false
-var chain_velocity = Vector2(0, 0)
-var tension_velocity = Vector2(0, 0)
 onready var rope_start_pos = $rope_start.position
+
+func init_pendulum(length, _phi):
+	l = length
+	phi = _phi
+	pendulum_pos = updatePhi() * factor
+	global_position = get_node($rope.end_node).global_position + pendulum_pos
+
+func reset_pendulum():
+	phi = 0 
+	phi_first = 0
+	pendulum_pos = Vector2()
+	pendulum_velocity = Vector2()
+
+func updatePhi(a=phi):
+	var offset = 5*PI/2 #offset factor to correct angles
+	return Vector2(l * cos(a + offset), l * sin(a + offset))
+
+func phiSecond(a, ao):
+	return ( - g / l * sin(a) - gamma * ao )
 	
+func update_pendulum_position(delta):
+	phi += phi_first * delta
+	phi_first += phiSecond(phi, phi_first) * delta
+	
+	var new_position = updatePhi() * factor
+	pendulum_velocity = (new_position - pendulum_pos) / delta
+	pendulum_pos = new_position
+
 func reset_rope():
 	$rope.end_pin = false
+	reset_pendulum()
 	hooked = false
 	var end_node = get_node($rope.end_node)
 	$rope.end_node = ""
@@ -62,7 +100,14 @@ func pull_rope():
 		end_node.apply_central_impulse(pull_vector * pull_rope_force * dist)
 	elif end_node is RigidBody2D:
 		end_node.apply_central_impulse(pull_vector * pull_rope_force)
-	elif end_node is StaticBody2D:
+		
+func hook_rope():
+	var end_node = get_node($rope.end_node)
+	var pull_vector = get_pull_vector()
+	if end_node is StaticBody2D:
+		var angle = pull_vector.angle() - PI/2
+		print(rad2deg(angle))
+		init_pendulum(global_position.distance_to(end_node.global_position) / factor, angle)
 		hooked = true
 
 func mirror_node_position(s, node, start_pos):
@@ -86,8 +131,6 @@ func _process(delta):
 			$rot.rotation_degrees = clamp($rot.rotation_degrees + 60 * delta, 90, 270)
 		elif Input.is_action_pressed("ui_down"):
 			$rot.rotation_degrees = clamp($rot.rotation_degrees - 60 * delta, 90, 270)
-	
-	update()
 
 func _physics_process(delta):
 	if Input.is_action_just_pressed("throw_rope") && !$rope.end_pin:
@@ -101,16 +144,16 @@ func _physics_process(delta):
 			end_node.apply_central_impulse(pull_vector * pull_rope_force * super_pull_factor)
 	elif Input.is_action_pressed("pull_rope") && $rope.end_pin:
 		pull_rope()
-			
+	elif !hooked && !is_on_floor() && Input.is_action_just_pressed("hook_rope") && $rope.end_pin:
+		hook_rope()
+	
+	var walk = (Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")) * WALK_SPEED
+	
 	if is_on_floor():
-		if Input.is_action_pressed("ui_left"):
-			$AnimationPlayer.play("walk")
-		elif Input.is_action_pressed("ui_right"):
+		if sign(walk) != 0:
 			$AnimationPlayer.play("walk")
 		else:
 			$AnimationPlayer.play("idle")
-	
-	var walk = (Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")) * WALK_SPEED
 	
 	if sign(walk) < 0:
 		$Sprite.flip_h = true
@@ -125,33 +168,21 @@ func _physics_process(delta):
 	
 	velocity.y += delta * gravity
 	
+	if hooked and Input.is_action_just_pressed("jump"):
+		reset_rope()
+		$AnimationPlayer.play("jump")
+		velocity.y = -JUMP_SPEED
+	
 	# Hook physics
 	if hooked:
-		# `to_local($Chain.tip).normalized()` is the direction that the chain is pulling
-		var pull_vector = -get_pull_vector()
-		chain_velocity = pull_vector.rotated(deg2rad(sign(pull_vector.x) * 90)) * pull_rope_force * 2
-		chain_velocity.y *= 0.1
-		tension_velocity = -Vector2(0, velocity.y)
-#		chain_velocity.y *= 0.01
-#		if chain_velocity.y > 0:
-#			# Pulling down isn't as strong
-#			chain_velocity.y *= 0.55
-#		else:
-#			# Pulling up is stronger
-#			chain_velocity.y *= 1.65
-#		if sign(chain_velocity.x) != sign(walk):
-#			# if we are trying to walk in a different
-#			# direction than the chain is pulling
-#			# reduce its pull
-#			chain_velocity.x *= 0.7
-	else:
-		# Not hooked -> no chain velocity
-		tension_velocity = Vector2(0, 0)
-		chain_velocity = Vector2(0,0)
-	velocity += chain_velocity + tension_velocity
+		$AnimationPlayer.play("catch")
+		update_pendulum_position(delta)
+		velocity = pendulum_velocity
+		move_and_slide(velocity, Vector2.UP, false, 4, PI/4, false)
+		return
 
-#	if !is_on_floor() and velocity.y > -220:
-#		velocity += Vector2.UP * -9.81 * fall_multiplier
+	if !is_on_floor() and velocity.y > -220:
+		velocity += Vector2.UP * -9.81 * fall_multiplier
 	
 	velocity.x += walk
 		
@@ -181,7 +212,3 @@ func _physics_process(delta):
 		var collision = get_slide_collision(index)
 		if collision.collider.is_in_group("bodies"):
 			collision.collider.apply_central_impulse(-collision.normal * push)
-
-func _draw():
-	draw_line(Vector2(0, 0), chain_velocity.normalized() * 100, Color.red)
-	draw_line(Vector2(0, 0), tension_velocity.normalized() * 100, Color.yellow)

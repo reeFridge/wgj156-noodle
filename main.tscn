@@ -32,7 +32,10 @@ collision_layer = 2
 collision_mask = 2
 
 [node name="player" parent="." instance=ExtResource( 3 )]
-position = Vector2( 275, -10 )
+position = Vector2( 269, -28 )
+l = 0.1
+factor = 50
+throw_rope_force = 350
 
 [node name="cube" parent="." instance=ExtResource( 2 )]
 position = Vector2( -78, 45 )
@@ -40,6 +43,10 @@ mass = 40.0
 contacts_reported = 1
 
 [node name="rope_handle" parent="." instance=ExtResource( 5 )]
+collision_layer = 32
+
+[node name="rope_handle3" parent="." instance=ExtResource( 5 )]
+position = Vector2( 367, -593 )
 collision_layer = 32
 
 [node name="rope_handle2" parent="." instance=ExtResource( 5 )]

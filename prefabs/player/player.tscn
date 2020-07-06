@@ -47,7 +47,6 @@ tracks/0/keys = {
 [sub_resource type="Animation" id=5]
 resource_name = "jump"
 length = 0.8
-loop = true
 tracks/0/type = "value"
 tracks/0/path = NodePath("Sprite:frame")
 tracks/0/interp = 1
@@ -90,7 +89,7 @@ pull_rope_force = 70
 texture = SubResource( 1 )
 vframes = 5
 hframes = 4
-frame = 12
+frame = 16
 region_rect = Rect2( 0, 0, 176, 256 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -113,7 +112,7 @@ editor_draw_drag_margin = true
 
 [node name="rope_joint" type="DampedSpringJoint2D" parent="."]
 node_a = NodePath("..")
-length = 100.0
+length = 200.0
 stiffness = 64.0
 damping = 16.0
 
