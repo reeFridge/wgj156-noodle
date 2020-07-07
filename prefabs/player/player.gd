@@ -39,7 +39,6 @@ func init_pendulum(length, _phi):
 	l = length
 	phi = _phi
 	pendulum_pos = updatePhi() * factor
-	global_position = get_node($rope.end_node).global_position + pendulum_pos
 
 func reset_pendulum():
 	phi = 0 
@@ -106,7 +105,6 @@ func hook_rope():
 	var pull_vector = get_pull_vector()
 	if end_node is StaticBody2D:
 		var angle = pull_vector.angle() - PI/2
-		print(rad2deg(angle))
 		init_pendulum(global_position.distance_to(end_node.global_position) / factor, angle)
 		hooked = true
 
@@ -168,10 +166,24 @@ func _physics_process(delta):
 	
 	velocity.y += delta * gravity
 	
-	if hooked and Input.is_action_just_pressed("jump"):
-		reset_rope()
-		$AnimationPlayer.play("jump")
-		velocity.y = -JUMP_SPEED
+	if hooked:
+		if Input.is_action_just_pressed("shrink_rope"):
+			var new_rope_len = clamp(l - 0.2, 1, 6)
+			init_pendulum(new_rope_len, phi)
+		elif Input.is_action_just_pressed("add_rope"):
+			var new_rope_len = clamp(l + 0.2, 1, 6)
+			init_pendulum(new_rope_len, phi)
+		elif Input.is_action_pressed("ui_right"):
+			var new_rope_phi = lerp_angle(phi, phi - 0.8, delta)
+			init_pendulum(l, new_rope_phi)
+		elif Input.is_action_pressed("ui_left"):
+			var new_rope_phi = lerp_angle(phi, phi + 0.8, delta)
+			init_pendulum(l, new_rope_phi)
+		
+		if Input.is_action_just_pressed("jump"):
+			reset_rope()
+			$AnimationPlayer.play("jump")
+			velocity.y = -JUMP_SPEED
 	
 	# Hook physics
 	if hooked:
@@ -179,6 +191,9 @@ func _physics_process(delta):
 		update_pendulum_position(delta)
 		velocity = pendulum_velocity
 		move_and_slide(velocity, Vector2.UP, false, 4, PI/4, false)
+		var new_position = get_node($rope.end_node).global_position + pendulum_pos
+		var follow_vector = (new_position - global_position).normalized() * abs(global_position.distance_to(new_position))
+		move_and_slide(follow_vector * 10, Vector2.UP, false, 4, PI/4, false)
 		return
 
 	if !is_on_floor() and velocity.y > -220:

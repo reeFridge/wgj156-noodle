@@ -52,13 +52,6 @@ func _process(delta):
 	#update_distance()	#Repeat to get tighter rope
 	#update_distance()
 	$Line2D.points = pos
-	
-	if Input.is_action_just_pressed("shrink_rope"):
-		length -= 1
-		init_length()
-	elif Input.is_action_just_pressed("add_rope"):
-		length += 1
-		init_length()
 
 func update_points(delta):
 	for i in range (count):
